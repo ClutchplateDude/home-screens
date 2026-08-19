@@ -71,6 +71,109 @@ test('date: switching View persists', async ({ page, request }) => {
   expect((await moduleConfig(request, 'date')).view).toBe('banner');
 });
 
+test('clock: picking a Timezone persists', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('clock'));
+
+  await autosaved(page, async () => {
+    const tz = page.getByRole('combobox', { name: 'Timezone' });
+    await tz.click();               // opens with the full list
+    await tz.fill('kiri');          // filters to the pinned row + Pacific/Kiritimati
+    await tz.press('ArrowDown');    // highlight 0: the pinned default row
+    await tz.press('ArrowDown');    // highlight 1: Pacific/Kiritimati
+    await tz.press('Enter');
+  });
+
+  expect((await moduleConfig(request, 'clock')).timezone).toBe('Pacific/Kiritimati');
+});
+
+test('clock: resetting to the display setting persists', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('clock', { timezone: 'Asia/Tokyo' }));
+
+  await autosaved(page, async () => {
+    const tz = page.getByRole('combobox', { name: 'Timezone' });
+    await tz.click();
+    await tz.press('ArrowDown');    // highlight 0: the pinned default row
+    await tz.press('Enter');
+  });
+
+  // Module config keeps the explicit empty string; the settings page drops the key entirely (undefined).
+  expect((await moduleConfig(request, 'clock')).timezone).toBe('');
+});
+
+test('date: picking a Timezone persists', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('date'));
+
+  await autosaved(page, async () => {
+    const tz = page.getByRole('combobox', { name: 'Timezone' });
+    await tz.click();
+    await tz.fill('kiri');
+    await tz.press('ArrowDown');
+    await tz.press('ArrowDown');
+    await tz.press('Enter');
+  });
+
+  expect((await moduleConfig(request, 'date')).timezone).toBe('Pacific/Kiritimati');
+});
+
+test('clock: picking a Timezone with the mouse persists and closes the list', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('clock'));
+
+  await autosaved(page, async () => {
+    const tz = page.getByRole('combobox', { name: 'Timezone' });
+    await tz.click();
+    // Mouse pick, not keyboard: guards against the wrapping-label bug where
+    // the trailing click reopens the list right after the pick.
+    await page.getByRole('option', { name: /Kiritimati/ }).click();
+    await expect(tz).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  expect((await moduleConfig(request, 'clock')).timezone).toBe('Pacific/Kiritimati');
+});
+
+test('clock: typing an exact zone and pressing Enter persists', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('clock'));
+
+  await autosaved(page, async () => {
+    const tz = page.getByRole('combobox', { name: 'Timezone' });
+    await tz.click();
+    await tz.fill('Asia/Kolkata');
+    await tz.press('Enter');
+  });
+
+  expect((await moduleConfig(request, 'clock')).timezone).toBe('Asia/Kolkata');
+});
+
+test('clock: Tab commits an arrow-highlighted timezone before focus moves on', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('clock'));
+
+  await autosaved(page, async () => {
+    const tz = page.getByRole('combobox', { name: 'Timezone' });
+    await tz.click();
+    await tz.fill('kiri');
+    await tz.press('ArrowDown');    // highlight 0: the pinned default row
+    await tz.press('ArrowDown');    // highlight 1: Pacific/Kiritimati
+    await tz.press('Tab');          // must commit the highlighted row, not discard it
+  });
+
+  expect((await moduleConfig(request, 'clock')).timezone).toBe('Pacific/Kiritimati');
+});
+
+test('clock: a zero-match timezone query shows the empty state and commits nothing', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('clock', { timezone: 'Asia/Tokyo' }));
+
+  const tz = page.getByRole('combobox', { name: 'Timezone' });
+  await tz.click();
+  await tz.fill('tokoy'); // typo — matches nothing, and the pinned row must NOT survive alone
+  const list = page.getByRole('listbox', { name: 'Timezone' });
+  await expect(list).toContainText('No matches');
+  await expect(list.getByRole('option')).toHaveCount(0);
+  await tz.press('ArrowDown');
+  await tz.press('Enter'); // nothing to pick — must not silently clear the override
+  await tz.press('Escape');
+
+  expect((await moduleConfig(request, 'clock')).timezone).toBe('Asia/Tokyo');
+});
+
 test('calendar: switching View Mode persists', async ({ page, request }) => {
   await selectModule(page, request, buildModuleInstance('calendar'));
 
@@ -1314,19 +1417,120 @@ test.describe('PropertyPanel Style', () => {
     await expect(page.locator('[data-module-id="greeting-1"] p').first()).toHaveCSS('font-weight', '900');
   });
 
-  test('clearing the title removes the strip and the stored key', async ({ page, request }) => {
+  test('clearing the title removes the strip, the stored key, and the stored size', async ({ page, request }) => {
     await selectStyledGreeting(page, request);
     await autosaved(page, async () => {
       await page.getByLabel('Card Title', { exact: true }).fill('Kitchen');
     });
     await expect(page.locator('[data-module-id="greeting-1"] [data-module-title]')).toHaveText('Kitchen');
+    await autosaved(page, async () => {
+      const slider = page.getByRole('slider', { name: 'Title Size' });
+      await slider.focus();
+      await slider.press('End');
+    });
+    expect((await moduleInstance(request)).style.titleFontSize).toBe(72);
 
-    // Empty input omits the key entirely so configs stay clean.
+    // Empty input omits the key entirely so configs stay clean — and takes
+    // titleFontSize with it, so a title added later starts at the default.
     await autosaved(page, async () => {
       await page.getByLabel('Card Title', { exact: true }).fill('');
     });
-    expect((await moduleInstance(request)).style.title).toBeUndefined();
+    const style = (await moduleInstance(request)).style;
+    expect(style.title).toBeUndefined();
+    expect(style.titleFontSize).toBeUndefined();
     await expect(page.locator('[data-module-id="greeting-1"] [data-module-title]')).toHaveCount(0);
+  });
+
+  test('titles persist trimmed on every keystroke; whitespace-only never persists', async ({ page, request }) => {
+    // The trim happens in onChange (not onBlur), so a tab closed mid-edit can
+    // never leave padding or a whitespace-only title behind in the config.
+    await selectStyledGreeting(page, request);
+    const input = page.getByLabel('Card Title', { exact: true });
+
+    await autosaved(page, async () => {
+      await input.fill('Kitchen   ');
+    });
+    // The input keeps the raw draft (so mid-word spaces aren't eaten)...
+    await expect(input).toHaveValue('Kitchen   ');
+    // ...while the stored value is already trimmed, without any blur.
+    expect((await moduleInstance(request)).style.title).toBe('Kitchen');
+
+    await autosaved(page, async () => {
+      await input.fill('   ');
+    });
+    expect((await moduleInstance(request)).style.title).toBeUndefined();
+  });
+
+  test('the Title Size slider appears only with a title and resets to the fallback', async ({ page, request }) => {
+    await selectStyledGreeting(page, request);
+    // No title yet: no size slider, so titleFontSize can never be written
+    // before a title exists.
+    await expect(page.getByRole('slider', { name: 'Title Size' })).toHaveCount(0);
+
+    await autosaved(page, async () => {
+      await page.getByLabel('Card Title', { exact: true }).fill('Kitchen');
+    });
+    await autosaved(page, async () => {
+      const slider = page.getByRole('slider', { name: 'Title Size' });
+      await slider.focus();
+      await slider.press('End');
+    });
+    expect((await moduleInstance(request)).style.titleFontSize).toBe(72);
+
+    // Reset to default drops the key: the strip returns to the module size.
+    await autosaved(page, async () => {
+      await page.getByRole('button', { name: 'Reset to default' }).last().click();
+    });
+    expect((await moduleInstance(request)).style.titleFontSize).toBeUndefined();
+    await expect(page.locator('[data-module-id="greeting-1"] [data-module-title]'))
+      .toHaveAttribute('style', /font-size:\s*16px/);
+  });
+
+  test('title controls are hidden for display-control (renders without a card)', async ({ page, request }) => {
+    await selectModule(page, request, buildModuleInstance('display-control'));
+    await page.getByRole('button', { name: 'Style', exact: true }).click();
+
+    // The strip could never render (no ModuleWrapper), so the fields are gone —
+    // while ordinary text styling stays available.
+    await expect(page.getByRole('slider', { name: 'Font Size' })).toBeVisible();
+    await expect(page.getByLabel('Card Title', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('slider', { name: 'Title Size' })).toHaveCount(0);
+  });
+
+  test('modules with their own title show a hint under Card Title', async ({ page, request }) => {
+    await selectModule(page, request, buildModuleInstance('todo'));
+    await page.getByRole('button', { name: 'Style', exact: true }).click();
+    await expect(page.getByText('also shows its own title')).toBeVisible();
+
+    // Modules without a built-in title get no hint.
+    await selectStyledGreeting(page, request);
+    await expect(page.getByText('also shows its own title')).toHaveCount(0);
+  });
+
+  test('the strip carries its own inset on padding-0 media modules', async ({ page, request }) => {
+    // Image forces the card padding to 0 so the picture runs edge to edge;
+    // the strip must not sit flush against the rounded corners.
+    const mod = buildModuleInstance('image', {
+      src: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',
+      alt: 'e2e',
+    });
+    await selectModule(page, request, mod);
+    await page.getByRole('button', { name: 'Style', exact: true }).click();
+    await autosaved(page, async () => {
+      await page.getByLabel('Card Title', { exact: true }).fill('Photo Frame');
+    });
+
+    const strip = page.locator('[data-module-id="image-1"] [data-module-title]');
+    await expect(strip).toHaveText('Photo Frame');
+    await expect(strip).toHaveAttribute('style', /padding:\s*16px 16px 8px/);
+
+    // A padded card contributes its own gap, so its strip only pads below.
+    await selectStyledGreeting(page, request);
+    await autosaved(page, async () => {
+      await page.getByLabel('Card Title', { exact: true }).fill('Padded');
+    });
+    await expect(page.locator('[data-module-id="greeting-1"] [data-module-title]'))
+      .toHaveAttribute('style', /padding:\s*0(px)? 0(px)? 8px/);
   });
 });
 

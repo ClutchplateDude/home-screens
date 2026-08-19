@@ -14,6 +14,7 @@
   },
   "common": {
     "saved": "Opgeslagen",
+    "noMatches": "Geen overeenkomsten",
     "refreshMinutes": "Vernieuwen (minuten)",
     "refreshSeconds": "Vernieuwen (seconden)",
     "refresh": "Vernieuwen",
@@ -2073,7 +2074,8 @@
       "fontWeightDefault": "Standaard",
       "fontWeightReset": "Terugzetten op standaard",
       "title": "Kaarttitel",
-      "titleFontSize": "Titelgrootte"
+      "titleFontSize": "Titelgrootte",
+      "titleOwnTitleHint": "Deze widget toont ook een eigen titel uit de instellingen, dus er kunnen twee titels verschijnen."
     },
     "actions": {
       "bringToFront": "Naar voren",
@@ -2294,6 +2296,8 @@
       "editChoreChart": "Klusjeslijst bewerken",
       "mobileHintPrefix": "Gezinsleden kunnen klusjes afvinken vanaf hun telefoon via het tabblad Klusjes op"
     },
+    "timezoneUseDisplay": "Display-instelling gebruiken ({timezone})",
+    "timezoneUseDisplayNoZone": "Display-instelling gebruiken",
     "clock": {
       "viewClassic": "Klassiek (gecentreerd)",
       "viewDigital": "Digitaal (7-segment LED)",
@@ -2336,6 +2340,7 @@
       "timeZonesCount": "Tijdzones ({count}/{max})",
       "addTimezone": "Tijdzone toevoegen...",
       "referenceTime": "Referentietijd",
+      "referenceTimezoneHint": "Gelezen als {timezone}-tijd",
       "referenceLabel": "Label",
       "referenceLabelPlaceholder": "bv. opening beurs",
       "countUp": "Optellen (verstreken)",
@@ -2351,7 +2356,8 @@
       "precisionDays": "Alleen dagen",
       "precisionDaysHours": "Dagen + uren",
       "precisionDaysHoursMinutes": "Dagen + uren + minuten",
-      "precisionDaysHoursMinutesSeconds": "Dagen + uren + minuten + seconden"
+      "precisionDaysHoursMinutesSeconds": "Dagen + uren + minuten + seconden",
+      "timezone": "Tijdzone"
     },
     "countdown": {
       "viewAll": "Alle evenementen (gestapeld)",
@@ -2394,6 +2400,7 @@
       "viewStacked": "Gestapeld (verticaal)",
       "viewEditorial": "Redactioneel (magazine)",
       "viewBanner": "Banner (horizontaal)",
+      "timezone": "Tijdzone",
       "datePresetMonthDay": "5 januari",
       "datePresetWeekdayMonthDay": "maandag 5 januari",
       "datePresetShortWeekday": "ma 5 jan",

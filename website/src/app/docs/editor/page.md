@@ -34,9 +34,9 @@ The editor canvas includes a floating toolbar with controls for zoom, undo/redo,
 
 ### Zoom & Pan
 
-The canvas supports zooming from 20% to 400% in fixed steps (20, 25, 30, 40, 50, 75, 100, 125, 150, 200, 300, 400):
+The canvas supports zooming from 25% to 300%:
 
-- **Trackpad pinch** or **Ctrl+Scroll** — zoom in/out centered on the cursor, stepping through the same fixed increments
+- **Trackpad pinch** or **Ctrl+Scroll** — zoom in/out centered on the cursor
 - **Zoom buttons** — use the **+** and **−** buttons in the floating toolbar
 - **Keyboard** — `Cmd+=` / `Ctrl+=` to zoom in, `Cmd+-` / `Ctrl+-` to zoom out, `Cmd+0` / `Ctrl+0` to fit
 - **Fit to screen** — click the fit button to reset zoom so the entire canvas is visible. The button only appears while you are zoomed in or out; at 100% there is nothing to fit
@@ -133,8 +133,8 @@ Every module (except the full-screen ones) can be styled. The controls are group
 
 **Text**
 
-- **Card Title** — show a centered title at the top of the module. The title sits on the module card, above its content, and is cut off with an ellipsis when it is too long to fit. Leave it empty for no title
-- **Title Size** — set the title's font size (8–72). It starts at the module's font size, so leaving the slider alone keeps them matched
+- **Card Title** — show a centered title at the top of the module. The title sits on the module card, above its content, and is cut off with an ellipsis when it is too long to fit. Leave it empty for no title. Some widgets (like the to-do list) also show a title of their own from their settings — setting both means you will see both
+- **Title Size** — set the title's font size (8–72). It appears once a title is set and starts at the module's font size, so leaving the slider alone keeps them matched; use Reset to default to match the font size again. Clearing the title clears this too
 - **Font Size** — set the base font size (8–72)
 - **Font Weight** — make all of the module's text lighter or bolder (100–900). Leave it on Default to keep the module's built-in look, and use Reset to default to go back. The title always stays at its normal weight
 - **Font Family** — choose from available fonts
